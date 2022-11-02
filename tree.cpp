@@ -3,6 +3,9 @@
 #include <assert.h>
 
 #include "tree.h"
+#include "common.h"
+
+const char* Poison = NULL;
 
 #define TREECHECK   int errors = TreeVerr(tree);                                          \
                     DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
@@ -59,8 +62,6 @@ int NodeVerr (Node* node, int* errors)
 
     if (node->val == Poison)
         *errors += VALERR;
-    if (node->tree == NULL)
-        *errors += NODETREEERR;
 
     return 0;
 }
@@ -114,12 +115,8 @@ int NodeDump(Node* node, int* counter, FILE* pic)
     if (node->rightchild)
         right = NodeDump(node->rightchild, counter, pic);
 
-    printf("left = %d", right);
-
-    fprintf(pic, "\"node%d\" [shape = \"circle\", style = \"filled\", fillcolor = \"green\", label = %d]\n", *counter, node->val);
-    printf("counter = %d\n", *counter);
+    fprintf(pic, "\"node%d\" [shape = \"circle\", style = \"filled\", fillcolor = \"green\", label = %s]\n", *counter, node->val);
     int curr = *counter;
-    printf("curr = %d\n", counter);
     if (node->leftchild)
         fprintf(pic, "\"node%d\" -> \"node%d\"\n", curr, left);
     if (node->rightchild)
@@ -175,17 +172,38 @@ Node* AddLeftChild(Tree* tree, Node* ancestor, elem_t val)
     return ancestor->leftchild;
 }
 
-int NodeDetor(Node* node)
+Node* TreeDepthSearch(Tree* tree, Node* node, elem_t searchval)
+{
+    Node* searchleft = NULL;
+    Node* searchright = NULL;
+    Node* searchhere = NULL;
+
+    if (node->leftchild)
+        searchleft = TreeDepthSearch(tree, node->leftchild, searchval);
+    if (node->rightchild)
+        searchright = TreeDepthSearch(tree, node->rightchild, searchval);
+
+    if (node->val == searchval)
+        return node;
+    else if (searchright)
+        return searchright;
+    else if (searchleft)
+        return searchleft;
+    else
+        return NULL;
+}
+
+int NodeDetor(Tree* tree, Node* node)
 {
     DBG assert (node != NULL);
 
     if (node->leftchild)
-        NodeDetor(node->leftchild);
+        NodeDetor(tree, node->leftchild);
 
     else if (node->rightchild)
-        NodeDetor(node->leftchild);
+        NodeDetor(tree, node->leftchild);
 
-    node->tree--;
+    tree->size--;
 
     free(node);
 
@@ -196,7 +214,7 @@ int TreeDetor(Tree* tree)
 {
     DBG assert (tree != NULL);
 
-    NodeDetor(tree->anchor);
+    NodeDetor(tree, tree->anchor);
 
     tree->size = -1;
     tree->graphlog = NULL;

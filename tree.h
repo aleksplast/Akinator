@@ -9,10 +9,11 @@
 #define DBG if(true)
 #endif
 
-typedef int elem_t;
+typedef char* elem_t;
 
-const int Poison = 0xDED32DED;
 static int Piccounter = 1;
+
+struct Tree;
 
 struct Node
 {
@@ -22,7 +23,7 @@ struct Node
     Node* leftchild;
     Node* rightchild;
 
-    struct Tree* tree;
+    Tree* tree;
 };
 
 struct Tree
@@ -43,11 +44,13 @@ int TreeGraphDump (Tree* tree, int errors, int line, const char* func, const cha
 
 int NodeDump(Node* node, int* counter, FILE* pic);
 
+Node* TreeDepthSearch(Tree* tree, Node* node, elem_t searchval);
+
 Node* AddRightChild(Tree* tree, Node* ancestor, elem_t val);
 
 Node* AddLeftChild(Tree* tree, Node* ancestor, elem_t val);
 
-int NodeDetor(Node* node);
+int NodeDetor(Tree* tree, Node* node);
 
 int TreeDetor(Tree* tree);
 
@@ -57,12 +60,6 @@ enum TreeErrors
     VALERR          = 1 << 2,
     SIZEERR         = 1 << 3,
     NODETREEERR     = 1 << 4,
-};
-
-enum SysErrors
-{
-    NOERR   = 1,
-    MEMERR  = 2,
 };
 
 #endif //TREE_H
