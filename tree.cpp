@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <assert.h>
 
 #include "tree.h"
@@ -7,7 +8,7 @@
 
 const char* Poison = NULL;
 
-#define TREECHECK   int errors = TreeVerr(tree);                                          \
+#define TREECHECK   int errors = TreeVerr(tree);                                         \
                     DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
 
 int TreeCtor(Tree* tree, elem_t rootval, char* graphfile)
@@ -183,7 +184,7 @@ Node* TreeDepthSearch(Tree* tree, Node* node, elem_t searchval)
     if (node->rightchild)
         searchright = TreeDepthSearch(tree, node->rightchild, searchval);
 
-    if (node->val == searchval)
+    if (stricmp(node->val, searchval) == 0)
         return node;
     else if (searchright)
         return searchright;
@@ -213,6 +214,8 @@ int NodeDetor(Tree* tree, Node* node)
 int TreeDetor(Tree* tree)
 {
     DBG assert (tree != NULL);
+
+    TREECHECK
 
     NodeDetor(tree, tree->anchor);
 
