@@ -8,8 +8,10 @@
 
 const char* Poison = NULL;
 
-#define TREECHECK   int errors = TreeVerr(tree);                                         \
-                    DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
+#define TREECHECK   if(int errors = TreeVerr(tree))                                         \
+                        DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
+
+static int Piccounter = 1;
 
 int TreeCtor(Tree* tree, elem_t rootval, char* graphfile)
 {
@@ -78,9 +80,9 @@ int TreeGraphDump (Tree* tree, int errors, int line, const char* func, const cha
 
     FILE* pic = fopen(picture, "w");
 
-    fprintf(pic, "DiGraph List {\n");
+    fprintf(pic, "strict graph {\n");
     fprintf(pic, "\trankdir = TB\n");
-    fprintf(pic, "\t \t\"info\" [shape = \"record\", style = \"filled\", fillcolor = \"grey\", label = \"{size = %d|anchor = %p}\"]\n", tree->size, tree->anchor);
+    fprintf(pic, "\t\"info\" [shape = \"record\", style = \"filled\", fillcolor = \"grey\", label = \"{size = %d|anchor = %p}\"]\n", tree->size, tree->anchor);
 
     int counter = 1;
     NodeDump(tree->anchor, &counter, pic);
@@ -105,6 +107,8 @@ int TreeGraphDump (Tree* tree, int errors, int line, const char* func, const cha
     fprintf(graphlog, "<hr>\n");
 
     fclose(graphlog);
+
+    return NOERR;
 }
 
 int NodeDump(Node* node, int* counter, FILE* pic)
@@ -116,12 +120,12 @@ int NodeDump(Node* node, int* counter, FILE* pic)
     if (node->rightchild)
         right = NodeDump(node->rightchild, counter, pic);
 
-    fprintf(pic, "\"node%d\" [shape = \"circle\", style = \"filled\", fillcolor = \"green\", label = %s]\n", *counter, node->val);
+    fprintf(pic, "\t\"node%d\" [shape = \"circle\", style = \"filled\", fillcolor = \"green\", label = \"%s\"]\n", *counter, node->val);
     int curr = *counter;
     if (node->leftchild)
-        fprintf(pic, "\"node%d\" -> \"node%d\"\n", curr, left);
+        fprintf(pic, "\t\"node%d\" -- \"node%d\"\n", curr, left);
     if (node->rightchild)
-        fprintf(pic, "\"node%d\" -> \"node%d\"\n", curr, right);
+        fprintf(pic, "\t\"node%d\" -- \"node%d\"\n", curr, right);
 
     (*counter)++;
     return *counter - 1;

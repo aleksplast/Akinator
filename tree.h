@@ -11,8 +11,6 @@
 
 typedef char* elem_t;
 
-static int Piccounter = 1;
-
 struct Tree;
 
 struct Node

@@ -11,32 +11,19 @@
 
 #define TRYSPEAK(line)  "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='EN'>" #line "</speak>"
 
-#define SPEAK(line)             if (Voice)                                              \
+#define SPEAK(line, ...)             if (Voice)                                         \
                                     {                                                   \
-                                        txSpeak(TRYSPEAK(line));                        \
-                                        printf(line);                                   \
+                                        txSpeak(TRYSPEAK(line) __VA_ARGS__);            \
+                                        printf(line __VA_ARGS__);                       \
+                                        printf("\n");                                   \
                                     }                                                   \
                                     else                                                \
-                                        printf(line);                                   \
-                                        printf("\n");
-
-#define SPEAK1(line, arg1)      if (Voice)                                              \
                                     {                                                   \
-                                        txSpeak(TRYSPEAK(line), arg1);                  \
-                                        printf(line, arg1);                             \
-                                    }                                                   \
-                                    else                                                \
-                                        printf(line, arg1);                             \
-                                        printf("\n");
+                                        printf(line __VA_ARGS__);                       \
+                                        printf("\n");                                   \
+                                    }
 
-#define SPEAK2(line, arg1, arg2)             if (Voice)                                         \
-                                            {                                                   \
-                                                txSpeak(TRYSPEAK(line), arg1, arg2);            \
-                                                printf(line, arg1, arg2);                       \
-                                            }                                                   \
-                                            else                                                \
-                                                printf(line, arg1, arg2);                       \
-                                                printf("\n");
+#define COMMA ,
 
 int AkinatorMain()
 {
@@ -76,7 +63,8 @@ Tree DataParser()
     while (isspace(*anchor))
         anchor += 1;
 
-    TreeCtor(&akinatortree, anchor, "graphlog.htm");
+    char log[20] = "graphlog.htm";
+    TreeCtor(&akinatortree, anchor, log);
 
     Node* currnode = akinatortree.anchor;
     int counter = 2;
@@ -157,7 +145,7 @@ int Guess(Node* node)
 {
     if (!node->leftchild && !node->rightchild)
     {
-        SPEAK1("Is it %s?", node->val);
+        SPEAK("Is it %s?", COMMA node->val);
 
         if (AnswerCheck())
         {
@@ -168,7 +156,7 @@ int Guess(Node* node)
     }
     else
     {
-        SPEAK1("%s?", node->val)
+        SPEAK("%s?", COMMA node->val)
 
         if (AnswerCheck())
         {
@@ -181,6 +169,8 @@ int Guess(Node* node)
             Guess(node);
         }
     }
+
+    return NOERR;
 }
 
 int AnswerCheck()
@@ -219,7 +209,7 @@ int AnswerAdd(Node* node)
         return NOERR;
     }
 
-    SPEAK2("Now tell me, whats the difference between %s and %s", answer, node->val);
+    SPEAK("Now tell me, whats the difference between %s and %s", COMMA answer COMMA node->val);
 
     gets(difference);
 
@@ -274,7 +264,7 @@ int Define(Tree* akinatortree, char* character)
 
     if (found)
     {
-        SPEAK1("%s - ", character);
+        SPEAK("%s - ", COMMA character);
         NodeDefine(found, akinatortree->anchor);
     }
     else
@@ -291,9 +281,13 @@ int NodeDefine(Node* node, Node* end)
         NodeDefine(node->ancestor, end);
 
     if (node->ancestor->leftchild == node)
-        SPEAK1("%s, ", node->ancestor->val);
-    if (node->ancestor->rightchild == node)
-        SPEAK1("not %s, ", node->ancestor->val);
+    {
+        SPEAK("%s, ", COMMA node->ancestor->val);
+    }
+    else if (node->ancestor->rightchild == node)
+    {
+        SPEAK("not %s, ", COMMA node->ancestor->val);
+    }
 
     return NOERR;;
 }
@@ -333,6 +327,8 @@ int DifferenciesMode(Tree* akinatortree)
 
     free(character1);
     free(character2);
+
+    return NOERR;
 }
 
 int Differencies(Tree* akinatortree, char* character1, char* character2)
@@ -350,13 +346,13 @@ int Differencies(Tree* akinatortree, char* character1, char* character2)
 
     if (!origin1)
     {
-        SPEAK1("Whoops, seems like i don't have %s in my database", character1);
+        SPEAK("Whoops, seems like i don't have %s in my database", COMMA character1);
         return NOERR;
     }
 
     if (!origin2)
     {
-        SPEAK1("Whoops, seems like i don't have %s in my database", character2);
+        SPEAK("Whoops, seems like i don't have %s in my database", COMMA character2);
         return NOERR;
     }
 
@@ -369,10 +365,12 @@ int Differencies(Tree* akinatortree, char* character1, char* character2)
     SPEAK("Their commons: ");
     NodeDefine(common->ancestor, akinatortree->anchor);
     SPEAK("Their differencies:");
-    SPEAK1("%s - ", character1);
+    SPEAK("%s - ", COMMA character1);
     NodeDefine(origin1, common->ancestor);
-    SPEAK1("%s - ", character2);
+    SPEAK("%s - ", COMMA character2);
     NodeDefine(origin2, common->ancestor);
+
+    return NOERR;
 }
 
 Node* FindPath(Tree* akinatortree, stack* stk, char* character)
@@ -406,6 +404,8 @@ int DataPrint(Tree* tree)
     NodePrint(data, tree->anchor);
 
     fclose(data);
+
+    return NOERR;
 }
 
 int NodePrint(FILE* data, Node* node)
