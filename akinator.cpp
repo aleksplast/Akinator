@@ -9,18 +9,20 @@
 #include "TXLib.h"
 #include "akinator.h"
 
+#define STRSIZE 40
+
 #define TRYSPEAK(line)  "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='EN'>" #line "</speak>"
 
-#define SPEAK(line, ...)             if (Voice)                                         \
+#define SPEAK(line, endline, ...)   if (Voice)                                          \
                                     {                                                   \
                                         txSpeak(TRYSPEAK(line) __VA_ARGS__);            \
                                         printf(line __VA_ARGS__);                       \
-                                        printf("\n");                                   \
+                                        if (endline) printf("\n");                      \
                                     }                                                   \
                                     else                                                \
                                     {                                                   \
                                         printf(line __VA_ARGS__);                       \
-                                        printf("\n");                                   \
+                                        if (endline) printf("\n");                      \
                                     }
 
 #define COMMA ,
@@ -41,6 +43,8 @@ int AkinatorMain()
             DifferenciesMode(&akinatortree);
         else if (mode == TEXTTOSPEAK)
             EnableTTS();
+        else if (mode == SHOWDATA)
+            ShowData(&akinatortree);
         else if (mode == EXIT)
             DataPrint(&akinatortree);
     }
@@ -63,13 +67,13 @@ Tree DataParser()
     while (isspace(*anchor))
         anchor += 1;
 
-    char log[20] = "graphlog.htm";
+    char* log = (char*) calloc(STRSIZE, sizeof(char));
+    log = "graphlog.htm";
     TreeCtor(&akinatortree, anchor, log);
 
     Node* currnode = akinatortree.anchor;
-    int counter = 2;
 
-    while (counter < src.nlines)
+    for (int counter = 2; counter < src.nlines; counter++)
     {
         char* curr = src.Strings[counter].ptr;
 
@@ -77,25 +81,29 @@ Tree DataParser()
             curr += 1;
 
         if (*curr == '}')
-        {
+            {
             currnode = currnode->ancestor;
-        }
-        else if (*curr == '{'){}
-        else
+            continue;
+            }
+        else if (*curr == '{')
         {
+            continue;
+        }
+        else
+            {
             if (currnode->leftchild)
             {
                 AddRightChild(&akinatortree, currnode, curr);
                 currnode = currnode->rightchild;
+                continue;
             }
             else
             {
                 AddLeftChild(&akinatortree, currnode, curr);
                 currnode = currnode->leftchild;
+                continue;
             }
         }
-
-        counter += 1;
     }
 
     return akinatortree;
@@ -108,11 +116,12 @@ int GetMode(int* mode)
     printf("[%d] for definition mode\n", DEFINE);
     printf("[%d] for differencies mode\n", DIFFERENCIES);
     printf("[%d] for enabling/disabling text to speak mode\n", TEXTTOSPEAK);
+    printf("[%d] for showing the database of this AI\n", SHOWDATA);
     printf("[%d] for exiting the programm\n", EXIT);
 
     scanf("%d", mode);
 
-    while (*mode <= 0 || *mode > 5)
+    while (*mode <= 0 || *mode > 6)
     {
         printf("You entered the wrong number, please, enter correct number\n");
         scanf("%d", mode);
@@ -123,19 +132,19 @@ int GetMode(int* mode)
 
 int GuessMode(Tree* akinatortree)
 {
-    SPEAK("Welcome to the guessing mode");
-    SPEAK("Think about any character, i will try to guess it");
-    SPEAK("Lets start");
+    SPEAK("Welcome to the guessing mode", 1);
+    SPEAK("Think about any character, i will try to guess it", 1);
+    SPEAK("Lets start", 1);
 
     Guess(akinatortree->anchor);
 
-    SPEAK("Nice game, you want to play more?")
+    SPEAK("Nice game, you want to play more?", 1)
 
     while (AnswerCheck())
     {
         Guess(akinatortree->anchor);
 
-        SPEAK("Nice game, you want to play more?");
+        SPEAK("Nice game, you want to play more?", 1);
     }
 
     return NOERR;
@@ -145,18 +154,18 @@ int Guess(Node* node)
 {
     if (!node->leftchild && !node->rightchild)
     {
-        SPEAK("Is it %s?", COMMA node->val);
+        SPEAK("Is it %s?", 1, COMMA node->val);
 
         if (AnswerCheck())
         {
-            SPEAK("I knew it!!!");
+            SPEAK("I knew it!!!", 1);
         }
         else
             AnswerAdd(node);
     }
     else
     {
-        SPEAK("%s?", COMMA node->val)
+        SPEAK("%s?", 1, COMMA node->val)
 
         if (AnswerCheck())
         {
@@ -185,7 +194,7 @@ int AnswerCheck()
         return 1;
     else
     {
-        SPEAK("Uncorrect answer, please enter \"yes\" or \"no\"");
+        SPEAK("Uncorrect answer, please enter yes or no", 1);
         return AnswerCheck();
     }
 }
@@ -194,22 +203,22 @@ int AnswerAdd(Node* node)
 {
     fflush(stdin);
 
-    char* answer = (char*) calloc(20, sizeof(char));
-    char* difference = (char*) calloc(20, sizeof(char));
+    char* answer = (char*) calloc(STRSIZE, sizeof(char));
+    char* difference = (char*) calloc(STRSIZE, sizeof(char));
 
-    SPEAK("You defeated me, i don't know your character");
-    SPEAK("Please, tell me, who was your character?");
+    SPEAK("You defeated me, i don't know your character", 1);
+    SPEAK("Please, tell me, who was your character?", 1);
 
     gets(answer);
 
     if (TreeDepthSearch(node->tree, node->tree->anchor, answer))
     {
-        SPEAK("I already have this character in my database, but with another definition");
+        SPEAK("I already have this character in my database, but with another definition", 1);
         Define(node->tree, answer);
         return NOERR;
     }
 
-    SPEAK("Now tell me, whats the difference between %s and %s", COMMA answer COMMA node->val);
+    SPEAK("Now tell me, whats the difference between %s and %s", 1, COMMA answer COMMA node->val);
 
     gets(difference);
 
@@ -225,11 +234,13 @@ int DefineMode(Tree* akinatortree)
 {
     fflush(stdin);
 
-    SPEAK("Welcome to the define mode");
-    SPEAK("Give a name of some character, and, if it's in my database,");
-    SPEAK("I will give you a definition of it");
+    SPEAK("Welcome to the define mode", 1);
+    SPEAK("Give a name of some character, and, if it's in my database,", 1);
+    SPEAK("I will give you a definition of it", 1);
 
     char character[40] = "";
+
+    fflush(stdin);
     gets(character);
 
     if (stricmp(character, "Amogus") == 0)
@@ -240,19 +251,19 @@ int DefineMode(Tree* akinatortree)
 
     Define(akinatortree, character);
 
-    SPEAK("Nice game, you want to play more?");
+    SPEAK("Nice game, you want to play more?", 1);
 
     while (AnswerCheck())
     {
         fflush(stdin);
 
-        SPEAK("Give a name of some character, and, if it's in my database,");
-        SPEAK("i will give you a definition of it");
+        SPEAK("Give a name of some character, and, if it's in my database,", 1);
+        SPEAK("i will give you a definition of it", 1);
 
         gets(character);
         Define(akinatortree, character);
 
-        SPEAK("Nice game, you want to play more?");
+        SPEAK("Nice game, you want to play more?", 1);
     }
 
     return NOERR;
@@ -264,11 +275,12 @@ int Define(Tree* akinatortree, char* character)
 
     if (found)
     {
-        SPEAK("%s - ", COMMA character);
+        SPEAK("%s - ", 0, COMMA character);
         NodeDefine(found, akinatortree->anchor);
+        printf("\n");
     }
     else
-        SPEAK("Whoops, seems like i don't have this character in my database");
+        SPEAK("Whoops, seems like i don't have this character in my database", 1);
 
     return NOERR;
 }
@@ -282,11 +294,11 @@ int NodeDefine(Node* node, Node* end)
 
     if (node->ancestor->leftchild == node)
     {
-        SPEAK("%s, ", COMMA node->ancestor->val);
+        SPEAK("%s, ", 0, COMMA node->ancestor->val);
     }
     else if (node->ancestor->rightchild == node)
     {
-        SPEAK("not %s, ", COMMA node->ancestor->val);
+        SPEAK("not %s, ", 0, COMMA node->ancestor->val);
     }
 
     return NOERR;;
@@ -294,12 +306,12 @@ int NodeDefine(Node* node, Node* end)
 
 int DifferenciesMode(Tree* akinatortree)
 {
-    SPEAK("Welcome to differencies mode");
-    SPEAK("Please, enter two characters from my database,");
-    SPEAK("I will tell you their differencies and their commons");
+    SPEAK("Welcome to differencies mode", 1);
+    SPEAK("Please, enter two characters from my database,", 1);
+    SPEAK("I will tell you their differencies and their commons", 1);
 
-    char* character1 = (char*) calloc(40, sizeof(char));
-    char* character2 = (char*) calloc(40, sizeof(char));
+    char* character1 = (char*) calloc(STRSIZE, sizeof(char));
+    char* character2 = (char*) calloc(STRSIZE, sizeof(char));
 
     fflush(stdin);
     gets(character1);
@@ -308,12 +320,12 @@ int DifferenciesMode(Tree* akinatortree)
     gets(character2);
 
     Differencies(akinatortree, character1, character2);
-    SPEAK("You want me to tell some more differencies?");
+    SPEAK("You want me to tell some more differencies?", 1);
 
-   while (AnswerCheck())
+    while (AnswerCheck())
     {
-        SPEAK("Please, enter two characters from my database,");
-        SPEAK("I will tell you their differencies and their commons");
+        SPEAK("Please, enter two characters from my database,", 1);
+        SPEAK("I will tell you their differencies and their commons", 1);
 
         fflush(stdin);
         gets(character1);
@@ -322,7 +334,7 @@ int DifferenciesMode(Tree* akinatortree)
         gets(character2);
 
         Differencies(akinatortree, character1, character2);
-        SPEAK("You want me to tell some more differencies?");
+        SPEAK("You want me to tell some more differencies?", 1);
     }
 
     free(character1);
@@ -346,13 +358,13 @@ int Differencies(Tree* akinatortree, char* character1, char* character2)
 
     if (!origin1)
     {
-        SPEAK("Whoops, seems like i don't have %s in my database", COMMA character1);
+        SPEAK("Whoops, seems like i don't have %s in my database", 1, COMMA character1);
         return NOERR;
     }
 
     if (!origin2)
     {
-        SPEAK("Whoops, seems like i don't have %s in my database", COMMA character2);
+        SPEAK("Whoops, seems like i don't have %s in my database", 1, COMMA character2);
         return NOERR;
     }
 
@@ -362,13 +374,23 @@ int Differencies(Tree* akinatortree, char* character1, char* character2)
         StackPush(&char1stk, (char*) common);
     }
 
-    SPEAK("Their commons: ");
+    if (common->ancestor == akinatortree->anchor)
+    {
+        SPEAK("%s and %s have no commons", 0, COMMA character1 COMMA character2);
+    }
+
+    SPEAK("The commons between %s and %s: ", 0, COMMA character1 COMMA character2);
     NodeDefine(common->ancestor, akinatortree->anchor);
-    SPEAK("Their differencies:");
-    SPEAK("%s - ", COMMA character1);
-    NodeDefine(origin1, common->ancestor);
-    SPEAK("%s - ", COMMA character2);
-    NodeDefine(origin2, common->ancestor);
+    printf("\n");
+    SPEAK("The difference between %s and %s: ", 0, COMMA character1 COMMA character2);
+    SPEAK("%s is ", 0, COMMA character1);
+    NodeDefine(common, common->ancestor);
+    SPEAK("while %s is not", 0, COMMA character2);
+//    NodeDefine(origin2, common->ancestor);
+    printf("\n");
+
+    StackDetor(&char1stk);
+    StackDetor(&char2stk);
 
     return NOERR;
 }
@@ -420,6 +442,16 @@ int NodePrint(FILE* data, Node* node)
         NodePrint(data, node->rightchild);
 
     fprintf(data, "}\n");
+
+    return NOERR;
+}
+
+int ShowData(Tree* tree)
+{
+    int errors = TreeVerr(tree);
+    TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
+
+    system(tree->graphlog);
 
     return NOERR;
 }

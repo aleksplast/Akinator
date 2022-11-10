@@ -8,7 +8,7 @@
 
 const char* Poison = NULL;
 
-#define TREECHECK   if(int errors = TreeVerr(tree))                                         \
+#define TREECHECK   if (int errors = TreeVerr(tree))                                         \
                         DBG TreeGraphDump(tree, errors, __LINE__, __func__, __FILE__);
 
 static int Piccounter = 1;

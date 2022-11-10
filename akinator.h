@@ -18,7 +18,8 @@ enum AkinatorModes
     DEFINE          = 2,
     DIFFERENCIES    = 3,
     TEXTTOSPEAK     = 4,
-    EXIT            = 5,
+    SHOWDATA        = 5,
+    EXIT            = 6,
 };
 
 int AkinatorMain();
@@ -53,6 +54,6 @@ int DataPrint(Tree* tree);
 
 int NodePrint(FILE* data, Node* node);
 
-int BetterTxSpeak(char* line, ...);
+int ShowData(Tree* tree);
 
 #endif //AKINATOR_H
